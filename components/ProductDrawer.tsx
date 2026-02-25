@@ -9,8 +9,6 @@ interface ProductDrawerProps {
   onClose: () => void;
 }
 
-type View = "detail" | "checkout";
-
 function StarRating({ rating, count }: { rating: number; count?: number }) {
   const stars = [];
   const rounded = Math.round(rating * 2) / 2;
@@ -42,14 +40,7 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
 
 export default function ProductDrawer({ product, onClose }: ProductDrawerProps) {
   const isOpen = !!product;
-  const [view, setView] = useState<View>("detail");
-
-  // Reset view when drawer closes
-  useEffect(() => {
-    if (!isOpen) {
-      setView("detail");
-    }
-  }, [isOpen]);
+  const [isCreatingCart, setIsCreatingCart] = useState(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -65,16 +56,38 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  const handleCheckoutClick = useCallback(() => {
-    if (!product?.checkoutUrl || product.checkoutUrl === "#") return;
-    setView("checkout");
+  const handleBuyNow = useCallback(async () => {
+    if (!product) return;
+
+    if (product.variantId) {
+      setIsCreatingCart(true);
+      try {
+        const res = await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ variantId: product.variantId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+      } catch {
+        // fall through to fallback
+      }
+      setIsCreatingCart(false);
+    }
+
+    // Fallback: use static checkout URL
+    if (product.checkoutUrl && product.checkoutUrl !== "#") {
+      window.location.href = product.checkoutUrl;
+    }
   }, [product]);
 
-  const handleBackClick = useCallback(() => {
-    setView("detail");
-  }, []);
-
-  const isCheckoutView = view === "checkout" && product?.checkoutUrl && product.checkoutUrl !== "#";
+  const hasCheckout =
+    product &&
+    ((product.variantId) ||
+      (product.checkoutUrl && product.checkoutUrl !== "#"));
 
   return (
     <>
@@ -96,152 +109,101 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
             transition-transform duration-300 ease-out pointer-events-auto
             ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
-        {/* Drag handle - only show in detail view */}
-        {!isCheckoutView && (
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 bg-gray-600 rounded-full" />
-          </div>
-        )}
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-gray-600 rounded-full" />
+        </div>
 
-        {/* Top bar - Detail view: close button, Checkout view: back button */}
-        {isCheckoutView ? (
-          <div className="flex items-center px-4 py-3">
-            <button
-              onClick={handleBackClick}
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
-            >
-              <span className="text-lg">←</span>
-              <span className="text-sm font-medium">Back</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-lg transition-colors"
-          >
-            ×
-          </button>
-        )}
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-lg transition-colors"
+        >
+          ×
+        </button>
 
         {product && (
           <div className="px-5 pb-8 pt-2 overflow-y-auto">
-            {isCheckoutView ? (
-              // Confirmation View
-              <div className="flex flex-col items-center">
-                {product.image && (
-                  <div className="relative h-24 w-24 rounded-xl overflow-hidden bg-white mb-4">
-                    <Image
-                      src={product.image}
-                      alt={product.title}
-                      fill
-                      className="object-contain p-2"
-                      sizes="96px"
-                      unoptimized
-                    />
-                  </div>
-                )}
+            {/* Product image */}
+            {product.image && (
+              <div className="relative h-52 w-full rounded-2xl overflow-hidden bg-white mb-4">
+                <Image
+                  src={product.image}
+                  alt={product.title}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 768px) 100vw, 700px"
+                  unoptimized
+                />
+              </div>
+            )}
 
-                <h2 className="text-lg font-bold text-white text-center leading-snug mb-1">
-                  {product.title}
-                </h2>
-                <p className="text-xl font-bold text-emerald-400 mb-1">
+            {/* Vendor */}
+            {product.vendor && (
+              <p className="text-xs text-emerald-400 font-medium uppercase tracking-wide mb-1">
+                {product.vendor}
+              </p>
+            )}
+
+            {/* Title */}
+            <h2 className="text-lg font-bold text-white leading-snug mb-2">
+              {product.title}
+            </h2>
+
+            {/* Rating */}
+            {product.rating > 0 && (
+              <div className="mb-3">
+                <StarRating rating={product.rating} count={product.ratingCount} />
+              </div>
+            )}
+
+            {/* Description */}
+            {product.description && (
+              <p className="text-sm text-gray-400 leading-relaxed mb-4 line-clamp-4">
+                {product.description}
+              </p>
+            )}
+
+            {/* Price + CTA */}
+            <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-800">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Price</p>
+                <p className="text-2xl font-bold text-emerald-400">
                   {product.currency === "USD" ? "$" : product.currency}
                   {product.price}
                 </p>
-                {product.vendor && (
-                  <p className="text-xs text-gray-400 mb-4">
-                    Sold by {product.vendor}
-                  </p>
-                )}
-
-                <div className="w-full border-t border-gray-800 my-2" />
-
-                <button
-                  onClick={() => { window.location.href = product.checkoutUrl; }}
-                  className="w-full py-4 mt-4 rounded-2xl text-base font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/40 transition-all"
-                >
-                  Go to Checkout →
-                </button>
-
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  You will be redirected to {product.vendor || "the merchant"} to complete your purchase
-                </p>
               </div>
-            ) : (
-              // Product Detail View
-              <>
-                {/* Product image */}
-                {product.image && (
-                  <div className="relative h-52 w-full rounded-2xl overflow-hidden bg-white mb-4">
-                    <Image
-                      src={product.image}
-                      alt={product.title}
-                      fill
-                      className="object-contain p-4"
-                      sizes="(max-width: 768px) 100vw, 700px"
-                      unoptimized
-                    />
-                  </div>
+
+              <button
+                onClick={handleBuyNow}
+                disabled={!hasCheckout || isCreatingCart}
+                className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all
+                  ${hasCheckout && !isCreatingCart
+                    ? "bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/40"
+                    : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  }`}
+              >
+                {isCreatingCart ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Creating cart...
+                  </span>
+                ) : hasCheckout ? (
+                  "Buy Now"
+                ) : (
+                  "Unavailable"
                 )}
+              </button>
+            </div>
 
-                {/* Vendor */}
-                {product.vendor && (
-                  <p className="text-xs text-emerald-400 font-medium uppercase tracking-wide mb-1">
-                    {product.vendor}
-                  </p>
-                )}
-
-                {/* Title */}
-                <h2 className="text-lg font-bold text-white leading-snug mb-2">
-                  {product.title}
-                </h2>
-
-                {/* Rating */}
-                {product.rating > 0 && (
-                  <div className="mb-3">
-                    <StarRating rating={product.rating} count={product.ratingCount} />
-                  </div>
-                )}
-
-                {/* Description */}
-                {product.description && (
-                  <p className="text-sm text-gray-400 leading-relaxed mb-4 line-clamp-4">
-                    {product.description}
-                  </p>
-                )}
-
-                {/* Price + CTA */}
-                <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-800">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Price</p>
-                    <p className="text-2xl font-bold text-emerald-400">
-                      {product.currency === "USD" ? "$" : product.currency}
-                      {product.price}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleCheckoutClick}
-                    disabled={!product.checkoutUrl || product.checkoutUrl === "#"}
-                    className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all
-                      ${product.checkoutUrl && product.checkoutUrl !== "#"
-                        ? "bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/40"
-                        : "bg-gray-700 text-gray-500 cursor-not-allowed"
-                      }`}
-                  >
-                    {product.checkoutUrl && product.checkoutUrl !== "#"
-                      ? "🛒 Buy Now"
-                      : "Unavailable"}
-                  </button>
-                </div>
-
-                {/* Merchant note */}
-                {product.vendor && (
-                  <p className="text-center text-xs text-gray-600 mt-3">
-                    Sold by {product.vendor} · Powered by Shopify
-                  </p>
-                )}
-              </>
+            {/* Merchant note */}
+            {product.vendor && (
+              <p className="text-center text-xs text-gray-600 mt-3">
+                Sold by {product.vendor} · Powered by Shopify
+              </p>
             )}
           </div>
         )}

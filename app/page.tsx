@@ -19,7 +19,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [mode, setMode] = useState<StoreMode>("global");
+  const [mode, setMode] = useState<StoreMode>("kaomart");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 

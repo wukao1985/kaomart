@@ -6,6 +6,7 @@ export interface Product {
   image: string;
   rating: number;
   checkoutUrl: string;
+  variantId?: string;
   vendor: string;
   description?: string;
   ratingCount?: number;
