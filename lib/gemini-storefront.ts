@@ -2,7 +2,7 @@ import { searchStorefrontProducts } from "./storefront";
 import { Product } from "./types";
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
 
 const SYSTEM_INSTRUCTION = `You MUST call the search_store_products tool before answering ANY question about products, availability, or what is in stock. Never answer product questions from memory — always search first.
 

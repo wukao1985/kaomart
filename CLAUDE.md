@@ -3,7 +3,7 @@
 ## Project Overview
 KaoMart is an **agentic shopping demo** built with:
 - **Next.js 14** (App Router) + Tailwind CSS
-- **Gemini 2.0 Flash** (AI model with function calling)
+- **Gemini 2.5 Pro** (AI model with function calling)
 - **Shopify Catalog MCP** (global product search — `discover.shopifyapps.com/global/mcp`)
 - **Supabase** (conversation session + message history)
 - **Vercel** (deployment)
@@ -35,8 +35,8 @@ Headers: `Authorization: Bearer {token}`, `Content-Type: application/json`
 GOOGLE_API_KEY=AQ.Ab8RN6KJK9L-sR2FIEXMQuMp8Tcco4Y4ybKrTPQa--nRQsp32A
 GOOGLE_PROJECT_ID=focal-welder-485422-s2
 ```
-Use `gemini-2.0-flash` model.
-REST endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={API_KEY}`
+Use `gemini-2.5-pro` model.
+REST endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?key={API_KEY}`
 
 ### Supabase
 ```

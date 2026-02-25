@@ -2,7 +2,7 @@ import { searchProducts, getProductDetails } from "./shopify";
 import { Product } from "./types";
 
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
 
 const SYSTEM_INSTRUCTION = `You are KaoMart, a friendly and helpful AI shopping assistant. You help users find and purchase products.
 
