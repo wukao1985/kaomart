@@ -43,15 +43,11 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
 export default function ProductDrawer({ product, onClose }: ProductDrawerProps) {
   const isOpen = !!product;
   const [view, setView] = useState<View>("detail");
-  const [iframeLoading, setIframeLoading] = useState(true);
-  const [iframeError, setIframeError] = useState(false);
 
   // Reset view when drawer closes
   useEffect(() => {
     if (!isOpen) {
       setView("detail");
-      setIframeLoading(true);
-      setIframeError(false);
     }
   }, [isOpen]);
 
@@ -76,24 +72,7 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
 
   const handleBackClick = useCallback(() => {
     setView("detail");
-    setIframeLoading(true);
-    setIframeError(false);
   }, []);
-
-  const handleIframeLoad = useCallback(() => {
-    setIframeLoading(false);
-  }, []);
-
-  const handleIframeError = useCallback(() => {
-    setIframeLoading(false);
-    setIframeError(true);
-  }, []);
-
-  const handleOpenInBrowser = useCallback(() => {
-    if (product?.checkoutUrl && product.checkoutUrl !== "#") {
-      window.location.href = product.checkoutUrl;
-    }
-  }, [product]);
 
   const isCheckoutView = view === "checkout" && product?.checkoutUrl && product.checkoutUrl !== "#";
 
@@ -115,8 +94,7 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
         <div
           className={`relative w-full max-w-3xl bg-gray-900 rounded-t-3xl shadow-2xl
             transition-transform duration-300 ease-out pointer-events-auto
-            ${isOpen ? 'translate-y-0' : 'translate-y-full'}
-            ${isCheckoutView ? 'h-[90vh] flex flex-col' : ''}`}
+            ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
         {/* Drag handle - only show in detail view */}
         {!isCheckoutView && (
@@ -125,22 +103,15 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
           </div>
         )}
 
-        {/* Top bar - Detail view: close button, Checkout view: back + title */}
+        {/* Top bar - Detail view: close button, Checkout view: back button */}
         {isCheckoutView ? (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+          <div className="flex items-center px-4 py-3">
             <button
               onClick={handleBackClick}
               className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
             >
               <span className="text-lg">←</span>
               <span className="text-sm font-medium">Back</span>
-            </button>
-            <h3 className="text-sm font-semibold text-white">Checkout</h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-lg transition-colors"
-            >
-              ×
             </button>
           </div>
         ) : (
@@ -153,40 +124,48 @@ export default function ProductDrawer({ product, onClose }: ProductDrawerProps) 
         )}
 
         {product && (
-          <div className={`${isCheckoutView ? "flex-1 flex flex-col overflow-hidden" : "px-5 pb-8 pt-2 overflow-y-auto"}`}>
+          <div className="px-5 pb-8 pt-2 overflow-y-auto">
             {isCheckoutView ? (
-              // Checkout View
-              <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Iframe container */}
-                <div className="flex-1 relative">
-                  {iframeLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                      <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm text-gray-400">Loading checkout...</p>
-                    </div>
-                  )}
-                  <iframe
-                    src={product.checkoutUrl}
-                    title="Checkout"
-                    className="w-full h-full border-0"
-                    onLoad={handleIframeLoad}
-                    onError={handleIframeError}
-                    allow="payment"
-                  />
-                </div>
+              // Confirmation View
+              <div className="flex flex-col items-center">
+                {product.image && (
+                  <div className="relative h-24 w-24 rounded-xl overflow-hidden bg-white mb-4">
+                    <Image
+                      src={product.image}
+                      alt={product.title}
+                      fill
+                      className="object-contain p-2"
+                      sizes="96px"
+                      unoptimized
+                    />
+                  </div>
+                )}
 
-                {/* Always-visible fallback bar */}
-                <div className="flex-none px-4 py-3 border-t border-gray-800 bg-gray-900">
-                  <p className="text-center text-sm text-gray-400">
-                    Not loading?{" "}
-                    <button
-                      onClick={handleOpenInBrowser}
-                      className="text-emerald-400 underline hover:text-emerald-300 transition-colors"
-                    >
-                      Open checkout in browser
-                    </button>
+                <h2 className="text-lg font-bold text-white text-center leading-snug mb-1">
+                  {product.title}
+                </h2>
+                <p className="text-xl font-bold text-emerald-400 mb-1">
+                  {product.currency === "USD" ? "$" : product.currency}
+                  {product.price}
+                </p>
+                {product.vendor && (
+                  <p className="text-xs text-gray-400 mb-4">
+                    Sold by {product.vendor}
                   </p>
-                </div>
+                )}
+
+                <div className="w-full border-t border-gray-800 my-2" />
+
+                <button
+                  onClick={() => { window.location.href = product.checkoutUrl; }}
+                  className="w-full py-4 mt-4 rounded-2xl text-base font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/40 transition-all"
+                >
+                  Go to Checkout →
+                </button>
+
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  You will be redirected to {product.vendor || "the merchant"} to complete your purchase
+                </p>
               </div>
             ) : (
               // Product Detail View
