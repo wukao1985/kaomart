@@ -7,6 +7,11 @@ const nextConfig = {
         hostname: "cdn.shopify.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "kaomart-2.myshopify.com",
+        pathname: "/**",
+      },
     ],
   },
 };

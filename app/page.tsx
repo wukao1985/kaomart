@@ -5,6 +5,8 @@ import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import { Product } from "@/lib/types";
 
+type StoreMode = "global" | "kaomart";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -16,6 +18,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [mode, setMode] = useState<StoreMode>("global");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize session
@@ -65,8 +68,11 @@ export default function Home() {
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setIsLoading(true);
 
+      const endpoint =
+        mode === "kaomart" ? "/api/chat/storefront" : "/api/chat";
+
       try {
-        const res = await fetch("/api/chat", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text, sessionId }),
@@ -135,19 +141,50 @@ export default function Home() {
         setIsLoading(false);
       }
     },
-    [sessionId, isLoading]
+    [sessionId, isLoading, mode]
   );
+
+  const placeholderText =
+    mode === "global"
+      ? "Search millions of products worldwide..."
+      : "Search KaoMart store products...";
 
   return (
     <div className="flex flex-col h-screen max-w-3xl mx-auto">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
-        <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white">
-          K
+      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white">
+            K
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white">KaoMart</h1>
+            <p className="text-xs text-gray-400">AI Shopping Assistant</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-white">KaoMart</h1>
-          <p className="text-xs text-gray-400">AI Shopping Assistant</p>
+
+        {/* Store mode toggle */}
+        <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
+          <button
+            onClick={() => setMode("global")}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mode === "global"
+                ? "bg-emerald-600 text-white"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            🌐 Global
+          </button>
+          <button
+            onClick={() => setMode("kaomart")}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mode === "kaomart"
+                ? "bg-emerald-600 text-white"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            🏪 KaoMart
+          </button>
         </div>
       </header>
 
@@ -163,8 +200,9 @@ export default function Home() {
                 Welcome to KaoMart
               </h2>
               <p className="text-sm text-gray-400 max-w-sm">
-                Tell me what you&apos;re looking for and I&apos;ll find the best
-                products for you.
+                {mode === "global"
+                  ? "Search products across millions of Shopify stores worldwide."
+                  : "Browse products from the KaoMart store catalog."}
               </p>
             </div>
           )}
@@ -193,7 +231,11 @@ export default function Home() {
       </div>
 
       {/* Input */}
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+      <ChatInput
+        onSend={handleSend}
+        disabled={isLoading}
+        placeholder={placeholderText}
+      />
     </div>
   );
 }
