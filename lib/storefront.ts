@@ -1,7 +1,7 @@
 import { Product } from "./types";
 
 const STORE_DOMAIN =
-  process.env.SHOPIFY_STORE_DOMAIN || "kaomart-2.myshopify.com";
+  (process.env.SHOPIFY_STORE_DOMAIN || "kaomart-2.myshopify.com").trim();
 const STOREFRONT_URL = `https://${STORE_DOMAIN}/api/2024-01/graphql.json`;
 
 const SEARCH_QUERY = `

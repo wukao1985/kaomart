@@ -4,7 +4,9 @@ import { Product } from "./types";
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-const SYSTEM_INSTRUCTION = `You are KaoMart, a friendly AI shopping assistant for the KaoMart store. You help users find products available exclusively in the KaoMart store.
+const SYSTEM_INSTRUCTION = `You MUST call the search_store_products tool before answering ANY question about products, availability, or what is in stock. Never answer product questions from memory — always search first.
+
+You are KaoMart, a friendly AI shopping assistant for the KaoMart store. You help users find products available exclusively in the KaoMart store.
 
 When users ask about products, use the search_store_products tool to search the KaoMart catalog. Present results in a brief, conversational way.
 
@@ -64,7 +66,8 @@ export async function streamStorefrontChat(
 
   let maxRounds = 5;
   while (maxRounds-- > 0) {
-    const response = await callGemini(geminiMessages);
+    const isFirstCall = maxRounds === 4;
+    const response = await callGemini(geminiMessages, isFirstCall);
     const candidate = response.candidates?.[0];
     if (!candidate?.content?.parts) break;
 
@@ -131,19 +134,28 @@ export async function streamStorefrontChat(
 }
 
 async function callGemini(
-  messages: GeminiMessage[]
+  messages: GeminiMessage[],
+  forceToolUse: boolean = false
 ): Promise<{ candidates?: Array<{ content?: { parts?: GeminiPart[] } }> }> {
   const apiKey = process.env.GOOGLE_API_KEY;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requestBody: Record<string, any> = {
+    system_instruction: {
+      parts: [{ text: SYSTEM_INSTRUCTION }],
+    },
+    contents: messages,
+    tools: [{ function_declarations: TOOL_DECLARATIONS }],
+    generationConfig: { temperature: 0 },
+  };
+  if (forceToolUse) {
+    requestBody.tool_config = {
+      function_calling_config: { mode: "ANY" },
+    };
+  }
   const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: {
-        parts: [{ text: SYSTEM_INSTRUCTION }],
-      },
-      contents: messages,
-      tools: [{ function_declarations: TOOL_DECLARATIONS }],
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!res.ok) {
