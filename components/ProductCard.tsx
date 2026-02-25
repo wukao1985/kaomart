@@ -6,33 +6,31 @@ function StarRating({ rating }: { rating: number }) {
   const rounded = Math.round(rating * 2) / 2;
   for (let i = 1; i <= 5; i++) {
     if (i <= rounded) {
-      stars.push(
-        <span key={i} className="text-yellow-400">
-          &#9733;
-        </span>
-      );
+      stars.push(<span key={i} className="text-yellow-400">★</span>);
     } else if (i - 0.5 === rounded) {
-      stars.push(
-        <span key={i} className="text-yellow-400 opacity-60">
-          &#9733;
-        </span>
-      );
+      stars.push(<span key={i} className="text-yellow-400 opacity-60">★</span>);
     } else {
-      stars.push(
-        <span key={i} className="text-gray-600">
-          &#9733;
-        </span>
-      );
+      stars.push(<span key={i} className="text-gray-600">★</span>);
     }
   }
   return <span className="flex gap-0.5 text-sm">{stars}</span>;
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product;
+  onSelect: (product: Product) => void;
+}
+
+export default function ProductCard({ product, onSelect }: ProductCardProps) {
   const hasImage = product.image && product.image !== "";
 
   return (
-    <div className="flex gap-3 rounded-xl bg-gray-800/70 border border-gray-700/50 p-3 hover:border-gray-600 transition-colors max-w-sm">
+    <div
+      className="flex gap-3 rounded-xl bg-gray-800/70 border border-gray-700/50 p-3
+        hover:border-emerald-600/50 hover:bg-gray-800 transition-all cursor-pointer max-w-sm
+        active:scale-[0.98]"
+      onClick={() => onSelect(product)}
+    >
       {hasImage && (
         <div className="relative h-[100px] w-[100px] flex-shrink-0 rounded-lg overflow-hidden bg-white">
           <Image
@@ -62,14 +60,13 @@ export default function ProductCard({ product }: { product: Product }) {
             {product.currency === "USD" ? "$" : product.currency}{" "}
             {product.price}
           </span>
-          <a
-            href={product.checkoutUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors"
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect(product); }}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95
+              text-white text-xs font-semibold rounded-lg transition-all"
           >
             Buy Now
-          </a>
+          </button>
         </div>
       </div>
     </div>

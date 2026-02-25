@@ -7,6 +7,8 @@ export interface Product {
   rating: number;
   checkoutUrl: string;
   vendor: string;
+  description?: string;
+  ratingCount?: number;
 }
 
 export interface ChatMessage {

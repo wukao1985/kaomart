@@ -7,12 +7,14 @@ interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   productResults?: Product[];
+  onSelectProduct?: (product: Product) => void;
 }
 
 export default function ChatMessage({
   role,
   content,
   productResults,
+  onSelectProduct,
 }: ChatMessageProps) {
   const isUser = role === "user";
 
@@ -45,7 +47,11 @@ export default function ChatMessage({
         {productResults && productResults.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
             {productResults.map((product, i) => (
-              <ProductCard key={product.id || i} product={product} />
+              <ProductCard
+                key={product.id || i}
+                product={product}
+                onSelect={onSelectProduct || (() => {})}
+              />
             ))}
           </div>
         )}

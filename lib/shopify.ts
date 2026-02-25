@@ -137,17 +137,57 @@ function parseProductResults(result: unknown): Product[] {
 
 function normalizeProduct(raw: unknown): Product {
   const p = raw as Record<string, unknown>;
+
+  // Extract price from Shopify Catalog MCP nested structure
+  const priceRange = p.priceRange as Record<string, unknown> | undefined;
+  const minPrice = (priceRange?.min as Record<string, unknown>) || (priceRange as Record<string, unknown>);
+  const rawAmount = Number(minPrice?.amount || p.price || p.amount || 0);
+  // Shopify returns price in cents (11000 = $110.00)
+  const priceInDollars = rawAmount > 1000 ? (rawAmount / 100).toFixed(2) : rawAmount.toFixed(2);
+  const currency = String((minPrice as Record<string, unknown>)?.currency || (minPrice as Record<string, unknown>)?.currencyCode || p.currency || "USD");
+
+  // Extract variant (Shopify MCP returns variants[] per offer)
+  const firstVariant = Array.isArray(p.variants) ? (p.variants as Array<Record<string, unknown>>)[0] : null;
+  const firstProduct = Array.isArray(p.products) ? (p.products as Array<Record<string, unknown>>)[0] : null;
+
+  // Extract image — prefer variant media, then offer-level media
+  const variantMedia = firstVariant?.media as Array<Record<string, unknown>> | undefined;
+  const offerMedia = (p.media || p.images) as Array<Record<string, unknown>> | undefined;
+  const firstMedia = (Array.isArray(variantMedia) && variantMedia.length > 0)
+    ? variantMedia[0]
+    : Array.isArray(offerMedia) ? offerMedia[0] : null;
+  const featuredImage = firstProduct?.featuredImage as Record<string, unknown> | undefined;
+  const image = String(
+    firstMedia?.url || featuredImage?.url || p.image || p.imageUrl || ""
+  );
+
+  // checkoutUrl — variants[0].checkoutUrl is the real merchant cart URL with Shop Pay
+  const checkoutUrl = String(
+    firstVariant?.checkoutUrl || firstProduct?.checkoutUrl || p.checkoutUrl || p.checkout_url || p.lookupUrl || "#"
+  );
+
+  // Extract rating — Shopify returns { rating: 4.8, count: 124 }
+  const ratingObj = p.rating as Record<string, unknown> | undefined;
+  const rating = Number(ratingObj?.rating || ratingObj?.value || p.rating || 0);
+
+  // Extract vendor — prefer variant shop, then offer-level
+  const shop = (firstVariant?.shop || firstProduct?.shop || p.shop) as Record<string, unknown> | undefined;
+  const vendor = String(shop?.name || p.vendor || "");
+
+  const description = String(p.description || "").slice(0, 300);
+  const ratingCount = Number(ratingObj?.count || ratingObj?.reviewCount || 0);
+
   return {
     id: String(p.id || p.offer_id || p.offerId || ""),
     title: String(p.title || p.name || "Unknown Product"),
-    price: String(p.price || p.amount || "0"),
-    currency: String(p.currency || p.currencyCode || "USD"),
-    image: String(
-      p.image || p.imageUrl || p.image_url || p.featuredImage || ""
-    ),
-    rating: Number(p.rating || p.score || 0),
-    checkoutUrl: String(p.checkoutUrl || p.checkout_url || p.url || "#"),
-    vendor: String(p.vendor || p.shop || p.store || ""),
+    price: priceInDollars,
+    currency,
+    image,
+    rating,
+    ratingCount,
+    checkoutUrl,
+    vendor,
+    description: description || undefined,
   };
 }
 

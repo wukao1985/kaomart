@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
+import ProductDrawer from "@/components/ProductDrawer";
 import { Product } from "@/lib/types";
 
 type StoreMode = "global" | "kaomart";
@@ -19,6 +20,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [mode, setMode] = useState<StoreMode>("global");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize session
@@ -212,6 +214,7 @@ export default function Home() {
               role={msg.role}
               content={msg.content}
               productResults={msg.productResults}
+              onSelectProduct={setSelectedProduct}
             />
           ))}
           {isLoading &&
@@ -235,6 +238,12 @@ export default function Home() {
         onSend={handleSend}
         disabled={isLoading}
         placeholder={placeholderText}
+      />
+
+      {/* Product detail drawer */}
+      <ProductDrawer
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
       />
     </div>
   );
