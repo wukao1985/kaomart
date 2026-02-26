@@ -32,7 +32,7 @@ export default function ChatInput({ onSend, disabled, placeholder }: ChatInputPr
   }
 
   return (
-    <div className="p-4 pb-6">
+    <div className="p-4 pb-6" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
       <form
         onSubmit={handleSubmit}
         className="flex items-end gap-2 bg-[#1e1e1e] rounded-2xl px-4 py-2 border border-[#2a2a2a] focus-within:border-emerald-600/50 transition-colors"

@@ -175,7 +175,7 @@ export default function ShoppingPage({
   );
 
   return (
-    <div className="flex h-screen bg-[#0d0d0d]">
+    <div className="flex h-[100dvh] bg-[#0d0d0d]">
       {/* Left: Chat */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
