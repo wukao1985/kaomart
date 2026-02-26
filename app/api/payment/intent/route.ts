@@ -8,7 +8,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Stripe not configured" }, { status: 500 });
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = new Stripe(secretKey, {
+      apiVersion: "2026-02-25.clover",
+    });
     const { amount, currency, productTitle } = await req.json();
 
     if (!amount || typeof amount !== "number" || amount < 50) {
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Stripe PaymentIntent error:", err);
     return Response.json(
-      { error: "Failed to create payment intent" },
+      { error: err instanceof Error ? err.message : "Failed to create payment intent" },
       { status: 500 }
     );
   }
