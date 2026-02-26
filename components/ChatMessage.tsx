@@ -22,22 +22,20 @@ export default function ChatMessage({
     <div
       className={`flex animate-fade-in ${isUser ? "justify-end" : "justify-start"}`}
     >
-      <div
-        className={`max-w-[85%] md:max-w-[70%] ${isUser ? "order-1" : "order-1"}`}
-      >
+      <div className={`max-w-[85%] md:max-w-[70%]`}>
         {!isUser && (
           <div className="flex items-center gap-2 mb-1.5">
             <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">
               K
             </div>
-            <span className="text-xs text-gray-400 font-medium">KaoMart</span>
+            <span className="text-xs text-gray-500 font-medium">KaoMart</span>
           </div>
         )}
         <div
           className={`rounded-2xl px-4 py-2.5 ${
             isUser
-              ? "bg-emerald-600 text-white rounded-br-md"
-              : "bg-gray-800 text-gray-100 rounded-bl-md"
+              ? "bg-[#2f2f2f] text-white rounded-br-md"
+              : "text-gray-100"
           }`}
         >
           <p className="text-sm whitespace-pre-wrap leading-relaxed">

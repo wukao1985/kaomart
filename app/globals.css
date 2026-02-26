@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gray-950 text-gray-100;
+  background-color: #0d0d0d;
+  color: #e5e5e5;
 }
 
 /* Custom scrollbar */
@@ -14,7 +15,8 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded-full;
+  background: #333;
+  border-radius: 9999px;
 }
 
 /* Fade in animation for messages */
@@ -51,4 +53,22 @@ body {
 }
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
+}
+
+/* Panel slide animations */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes slideInUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slideOutDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
 }

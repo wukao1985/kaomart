@@ -1,250 +1,51 @@
-"use client";
-
-import { useState, useEffect, useRef, useCallback } from "react";
-import ChatMessage from "@/components/ChatMessage";
-import ChatInput from "@/components/ChatInput";
-import ProductDrawer from "@/components/ProductDrawer";
-import { Product } from "@/lib/types";
-
-type StoreMode = "global" | "kaomart";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  productResults?: Product[];
-}
+import Link from "next/link";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [mode, setMode] = useState<StoreMode>("kaomart");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Initialize session
-  useEffect(() => {
-    async function initSession() {
-      const stored = localStorage.getItem("kaomart_session_id");
-      if (stored) {
-        setSessionId(stored);
-        return;
-      }
-      try {
-        const res = await fetch("/api/session", { method: "POST" });
-        const data = await res.json();
-        localStorage.setItem("kaomart_session_id", data.sessionId);
-        setSessionId(data.sessionId);
-      } catch (err) {
-        console.error("Failed to create session:", err);
-      }
-    }
-    initSession();
-  }, []);
-
-  // Auto-scroll
-  useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages]);
-
-  const handleSend = useCallback(
-    async (text: string) => {
-      if (!sessionId || isLoading) return;
-
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: text,
-      };
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "",
-        productResults: [],
-      };
-
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
-      setIsLoading(true);
-
-      const endpoint =
-        mode === "kaomart" ? "/api/chat/storefront" : "/api/chat";
-
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, sessionId }),
-        });
-
-        if (!res.ok || !res.body) {
-          throw new Error("Chat request failed");
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            const dataLine = line.replace(/^data: /, "").trim();
-            if (!dataLine) continue;
-
-            try {
-              const event = JSON.parse(dataLine);
-              if (event.type === "text") {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const last = updated[updated.length - 1];
-                  if (last.role === "assistant") {
-                    last.content += event.data;
-                  }
-                  return updated;
-                });
-              } else if (event.type === "products") {
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  const last = updated[updated.length - 1];
-                  if (last.role === "assistant") {
-                    last.productResults = [
-                      ...(last.productResults || []),
-                      ...event.data,
-                    ];
-                  }
-                  return updated;
-                });
-              }
-            } catch {
-              // Skip malformed events
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Chat error:", err);
-        setMessages((prev) => {
-          const updated = [...prev];
-          const last = updated[updated.length - 1];
-          if (last.role === "assistant") {
-            last.content = "Something went wrong. Please try again.";
-          }
-          return updated;
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [sessionId, isLoading, mode]
-  );
-
-  const placeholderText =
-    mode === "global"
-      ? "Search millions of products worldwide..."
-      : "Search KaoMart store products...";
-
   return (
-    <div className="flex flex-col h-screen max-w-3xl mx-auto">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white">
-            K
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">KaoMart</h1>
-            <p className="text-xs text-gray-400">AI Shopping Assistant</p>
-          </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0d0d0d] px-4">
+      <div className="flex flex-col items-center mb-12">
+        <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center mb-4">
+          <span className="text-2xl font-bold text-white">K</span>
         </div>
-
-        {/* Store mode toggle */}
-        <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
-          <button
-            onClick={() => setMode("global")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              mode === "global"
-                ? "bg-emerald-600 text-white"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            🌐 Global
-          </button>
-          <button
-            onClick={() => setMode("kaomart")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              mode === "kaomart"
-                ? "bg-emerald-600 text-white"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
-          >
-            🏪 KaoMart
-          </button>
-        </div>
-      </header>
-
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="flex flex-col gap-4">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full pt-32 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-600/20 flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-emerald-400">K</span>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-200 mb-2">
-                Welcome to KaoMart
-              </h2>
-              <p className="text-sm text-gray-400 max-w-sm">
-                {mode === "global"
-                  ? "Search products across millions of Shopify stores worldwide."
-                  : "Browse products from the KaoMart store catalog."}
-              </p>
-            </div>
-          )}
-          {messages.map((msg) => (
-            <ChatMessage
-              key={msg.id}
-              role={msg.role}
-              content={msg.content}
-              productResults={msg.productResults}
-              onSelectProduct={setSelectedProduct}
-            />
-          ))}
-          {isLoading &&
-            messages[messages.length - 1]?.role === "assistant" &&
-            messages[messages.length - 1]?.content === "" && (
-              <div className="flex justify-start">
-                <div className="bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex gap-1">
-                    <div className="typing-dot w-2 h-2 bg-gray-400 rounded-full" />
-                    <div className="typing-dot w-2 h-2 bg-gray-400 rounded-full" />
-                    <div className="typing-dot w-2 h-2 bg-gray-400 rounded-full" />
-                  </div>
-                </div>
-              </div>
-            )}
-        </div>
+        <h1 className="text-3xl font-bold text-white mb-2">KaoMart</h1>
+        <p className="text-sm text-gray-500">AI-Powered Shopping Assistant</p>
       </div>
 
-      {/* Input */}
-      <ChatInput
-        onSend={handleSend}
-        disabled={isLoading}
-        placeholder={placeholderText}
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl w-full">
+        <Link
+          href="/global"
+          className="group flex flex-col gap-3 p-6 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] hover:border-blue-500/40 hover:bg-[#1e1e1e] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-lg">
+            🌐
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
+              Global Shopping
+            </h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Search millions of products from Shopify merchants worldwide
+            </p>
+          </div>
+        </Link>
 
-      {/* Product detail drawer */}
-      <ProductDrawer
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-      />
+        <Link
+          href="/kaomart"
+          className="group flex flex-col gap-3 p-6 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] hover:border-emerald-500/40 hover:bg-[#1e1e1e] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-lg">
+            🏪
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white mb-1 group-hover:text-emerald-400 transition-colors">
+              KaoMart Store
+            </h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Shop curated products with instant checkout
+            </p>
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }
