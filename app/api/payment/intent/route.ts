@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,9 +7,6 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Stripe not configured" }, { status: 500 });
     }
 
-    const stripe = new Stripe(secretKey, {
-      apiVersion: "2026-02-25.clover",
-    });
     const { amount, currency, productTitle } = await req.json();
 
     if (!amount || typeof amount !== "number" || amount < 50) {
@@ -20,15 +16,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount),
-      currency: (currency || "USD").toLowerCase(),
-      metadata: { productTitle: productTitle || "" },
+    const body = new URLSearchParams({
+      amount: String(Math.round(amount)),
+      currency: (currency || "usd").toLowerCase(),
+      "metadata[productTitle]": productTitle || "",
+      "automatic_payment_methods[enabled]": "true",
     });
 
-    return Response.json({ clientSecret: paymentIntent.client_secret });
+    const res = await fetch("https://api.stripe.com/v1/payment_intents", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return Response.json(
+        { error: data.error?.message || "Stripe error" },
+        { status: res.status }
+      );
+    }
+
+    return Response.json({ clientSecret: data.client_secret });
   } catch (err) {
-    console.error("Stripe PaymentIntent error:", err);
+    console.error("Payment intent error:", err);
     return Response.json(
       { error: err instanceof Error ? err.message : "Failed to create payment intent" },
       { status: 500 }
