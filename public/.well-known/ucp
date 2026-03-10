@@ -1,0 +1,8 @@
+{
+  "ucp": { "version": "2026-01-11" },
+  "merchant": { "name": "KaoMart", "id": "kaomart" },
+  "capabilities": ["checkout", "order_management"],
+  "payment": {
+    "handlers": [{ "id": "stripe_mock", "name": "com.kaomart.stripe_mock", "version": "2026-01-11" }]
+  }
+}
