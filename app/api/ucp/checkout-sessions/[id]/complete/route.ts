@@ -68,12 +68,10 @@ export async function POST(
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: session.currency.toLowerCase(),
+      payment_method_types: ['card'],
       metadata: {
         session_id: sessionId,
-        buyer_email: session.buyer?.email,
-      },
-      automatic_payment_methods: {
-        enabled: true,
+        buyer_email: session.buyer?.email || '',
       },
     });
 
@@ -103,9 +101,10 @@ export async function POST(
       ucp: { version: '2026-01-11' },
     });
   } catch (error) {
-    console.error('Complete checkout error:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Complete checkout error:', msg);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', detail: msg },
       { status: 500 }
     );
   }
