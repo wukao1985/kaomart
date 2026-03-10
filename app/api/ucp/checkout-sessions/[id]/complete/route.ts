@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!);
+}
 
 function generateOrderId(): string {
   return 'km_' + Array.from({ length: 8 }, () =>
@@ -35,6 +39,9 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    const supabase = getSupabase();
+    const stripe = getStripe();
 
     const { data: session, error: fetchError } = await supabase
       .from('ucp_sessions')
