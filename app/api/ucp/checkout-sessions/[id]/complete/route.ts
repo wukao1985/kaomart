@@ -7,9 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function generateOrderId(): string {
   return 'km_' + Array.from({ length: 8 }, () =>
